@@ -1,0 +1,82 @@
+---
+title: "assignment_1"
+author: "Juliet Cohen"
+date: "1/13/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+The full data are contained in the file CES4.xls, which is available on Gauchospace (note that the Excel file has three “tabs” or “sheets”). The data is in the tab “CES4.0FINAL_results” and “Data Dictionary” contains the definition of the variables.
+
+For the assignment, you will need the following variables: CensusTract, TotalPopulation, CaliforniaCounty (the county where the census tract is located), LowBirthWeight (percent of census tract births with weight less than 2500g), PM25 (ambient concentrations of PM2.5 in the census tract, in micrograms per cubic meters), and Poverty (percent of population in the census tract living below twice the federal poverty line).
+
+```{r}
+library(here)
+library(readxl)
+library(janitor)
+library(tidyverse)
+```
+
+```{r}
+data <- read_excel(here("CES4.xlsx")) %>% 
+  clean_names()
+```
+
+```{r}
+colnames(data)
+# I think it only imported the first tab, which has 58 cols, which I think is ok considering the data is specified as that tab, but not sure if we need the demographic tab too
+# got a lot of warnings when imported data, check with others that the same happened for them (probs cause of multiple sheets)
+```
+
+(a) What is the average concentration of PM2.5 across all census tracts in California?
+
+```{r}
+# subset data for only relevant columns for this assignment
+relevant_data <- data %>% 
+  select(census_tract, pm2_5, total_population, california_county, low_birth_weight, poverty)
+
+# check if there are any NA values
+map(relevant_data, ~sum(is.na(.)))
+# there are 75 NA values in the poverty col, none in other cols
+# this assures me that every row is associated with a California county
+
+avg_pm2_5 <- mean(relevant_data$pm2_5)
+avg_pm2_5
+```
+
+**The average ambient PM2.5 concentration across all census tracts in California is `r avg_pm2_5` micrograms per cubic meters**
+
+(b) What county has the highest level of poverty in California?
+(c) Make a histogram depicting the distribution of percent low birth weight and PM2.5.
+(d) Estimate a OLS regression of LowBirthWeight on PM25. Report the estimated slope coefficient and its heteroskedasticity-robust standard error. Interpret the estimated slope coefficient. Is the effect of PM25 on LowBirthWeight statistically significant at the 5%?
+(e) Suppose a new air quality policy is expected to reduce PM2.5 concentration by 2 micrograms per cubic meters. Predict the new average value of LowBirthWeight and derive its 95% confidence interval. Interpret the 95% confidence interval.
+(f) Add the variable Poverty as an explanatory variable to the regression in (d). Interpret the estimated coefficient on Poverty. What happens to the estimated coefficient on PM25, compared to the regression in (d). Explain.
+(g) From the regression in (f), test the null hypothesis that the effect of PM2.5 is equal to the effect of Poverty
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+The data for this assignment come from CalEnviroScreen 4.0, a mapping and data tool produced by the California Office of Environmental Health Hazards Assessment (OEHHA). The data are compiled and constructed from a variety of sources and cover all 8,035 census tracts in California. Source: https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40
