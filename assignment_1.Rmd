@@ -21,7 +21,10 @@ library(tidyverse)
 ```
 
 ```{r}
-data <- read_excel(here("CES4.xlsx")) %>% 
+#data <- read_excel(here("CES4.xlsx")) %>% 
+#  clean_names()
+
+data <- read.csv(here("CES4_copy.csv")) %>% 
   clean_names()
 ```
 
@@ -47,12 +50,86 @@ avg_pm2_5 <- mean(relevant_data$pm2_5)
 avg_pm2_5
 ```
 
-**The average ambient PM2.5 concentration across all census tracts in California is `r avg_pm2_5` micrograms per cubic meters**
+**The average ambient PM2.5 concentration across all census tracts in California is `r avg_pm2_5` micrograms per cubic meter**
 
 (b) What county has the highest level of poverty in California?
+
+```{r}
+mean_pov_county_df <- relevant_data %>%
+  group_by(california_county) %>% 
+  summarise(mean_pov = mean(poverty), na.rm = TRUE)
+
+# remove rows with NA
+mean_pov_county_no_na <-  na.omit(mean_pov_county_df)
+
+# find county with max avg poverty
+#max_pov_county <- max(mean_pov_county_no_na$mean_pov)
+#max_pov_county
+
+# reduce dataframe to just row with max value
+mean_pov_county <- mean_pov_county_no_na[which.max(mean_pov_county_no_na$mean_pov),]
+mean_pov_county
+```
+**In California, Tulare county has the highest poverty with a mean of `r mean_pov_county$mean_pov` percent of the county population in the census tract living below twice the federal poverty line.**
+
 (c) Make a histogram depicting the distribution of percent low birth weight and PM2.5.
+
+```{r}
+#class(relevant_data$low_birth_weight)
+#as.numeric(unlist(relevant_data$low_birth_weight))
+# lbw_num_vec <- relevant_data %>% 
+#   unlist("low_birth_weight") %>% 
+#   as.numeric("low_birth_weight")
+# lbw_num_vec
+```
+
+```{r}
+hist_birth_weight <- ggplot(data = relevant_data, aes(x = low_birth_weight)) +
+  geom_histogram() +
+  ggtitle("Low Birth Weights in California") +
+   xlab("Low Birth Weights: % of census tract births with weight less < 2500g") + 
+   ylab("Count") +
+   theme(panel.background = element_blank(),
+         axis.title.x = element_text(color = "black", size = 15),
+         axis.text.x = element_text(face = "bold", color = "black", size = 15),
+         axis.title.y = element_text(color = "black", size = 15),
+         axis.text.y = element_text(face = "bold", color = "black", size = 12),
+         plot.title = element_text(color="black", size = 15, face = "bold"),
+         panel.border = element_rect(colour = "black", fill = NA, size = 2))
+
+hist_birth_weight
+
+hist_pm2_5 <- ggplot(data = relevant_data, aes(x = pm2_5)) +
+  geom_histogram() +
+  ggtitle("Ambient PM2.5 Concentrations in California") +
+   xlab("Ambient concentrations of PM2.5 (micrograms per cubic meter)") + 
+   ylab("Count") +
+   theme(panel.background = element_blank(),
+         axis.title.x = element_text(color = "black", size = 15),
+         axis.text.x = element_text(face = "bold", color = "black", size = 15),
+         axis.title.y = element_text(color = "black", size = 15),
+         axis.text.y = element_text(face = "bold", color = "black", size = 12),
+         plot.title = element_text(color="black", size = 15, face = "bold"),
+         panel.border = element_rect(colour = "black", fill = NA, size = 2))
+
+hist_pm2_5
+```
+
+
 (d) Estimate a OLS regression of LowBirthWeight on PM25. Report the estimated slope coefficient and its heteroskedasticity-robust standard error. Interpret the estimated slope coefficient. Is the effect of PM25 on LowBirthWeight statistically significant at the 5%?
+
+```{r}
+
+```
+
+
 (e) Suppose a new air quality policy is expected to reduce PM2.5 concentration by 2 micrograms per cubic meters. Predict the new average value of LowBirthWeight and derive its 95% confidence interval. Interpret the 95% confidence interval.
+
+```{r}
+
+```
+
+
 (f) Add the variable Poverty as an explanatory variable to the regression in (d). Interpret the estimated coefficient on Poverty. What happens to the estimated coefficient on PM25, compared to the regression in (d). Explain.
 (g) From the regression in (f), test the null hypothesis that the effect of PM2.5 is equal to the effect of Poverty
 
