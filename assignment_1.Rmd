@@ -18,6 +18,7 @@ library(here)
 library(readxl)
 library(janitor)
 library(tidyverse)
+library(estimatr)
 ```
 
 ```{r}
@@ -55,6 +56,7 @@ avg_pm2_5
 (b) What county has the highest level of poverty in California?
 
 ```{r}
+# get the mean poverty value for each county, in the form of a df
 mean_pov_county_df <- relevant_data %>%
   group_by(california_county) %>% 
   summarise(mean_pov = mean(poverty), na.rm = TRUE)
@@ -119,21 +121,108 @@ hist_pm2_5
 (d) Estimate a OLS regression of LowBirthWeight on PM25. Report the estimated slope coefficient and its heteroskedasticity-robust standard error. Interpret the estimated slope coefficient. Is the effect of PM25 on LowBirthWeight statistically significant at the 5%?
 
 ```{r}
+# his wording for question d makes it seem like the formula should be pm2_5 ~ low_birth_weight, but logically that makes no sense
+pm_model <- lm_robust(formula = low_birth_weight ~ pm2_5, data = relevant_data)
+pm_model
+# check that the std error is heteroskedasticity robust
+```
 
+**The linear equation for the relationship between PM2.5 concentration and low birth weight is:\**
+low_birth_weight = 3.8009877 + (0.1179305)number_PM_unit_increase + u
+
+- **The estimated slope coefficient for the OLS regression of PM2.5 on Low Birth Weight is 0.1179305.**\
+- **The heteroskedasticity-robust standard error for the slope coefficient is 0.008402393. We can trust that this standard error is heteroskedasticity robust because we used lm_robust() rather than just lm().**\
+- **The slope coefficient represents the amount of change in birth weights for each 1 unit increase in PM2.5 concentration, which is in units of micrograms per cubic meter. Since the slope coefficient is positive, the percentage of low birth rates will increase by 0.1179305 for every 1 microgram per cubic meter increase in PM2.5 in the ambient air.**\
+- **The effect of PM2_5 on Low Birth Rate is indeed statistically significant, with the PM2.5 p-value being 3.256106e-44, which is much smaller than the standard threshold for significance of 0.05.**
+
+```{r}
+ggplot(data = relevant_data, aes(x = pm2_5, y = low_birth_weight)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  xlab("PM2.5") +
+  ylab("Low Birth Weight")
 ```
 
 
 (e) Suppose a new air quality policy is expected to reduce PM2.5 concentration by 2 micrograms per cubic meters. Predict the new average value of LowBirthWeight and derive its 95% confidence interval. Interpret the 95% confidence interval.
 
 ```{r}
+# This value is positive. The slope coeff from the output of the lm_robust() function described the relationship of an INCREASE in 1 unit of PM2.5 means an INCREASE in lbw, and the policy suggested in question e would REDUCE PM2.5 by 2 units, so flip the sign of the slope and double the value
+#lbw_change <- -(2*0.1179305)
+#lbw_change
+
+# get the mean lbw value for each county, in the form of a df
+original_lbw_avg <- mean(relevant_data$low_birth_weight, na.rm = TRUE)
+original_lbw_avg
+
+# # make a function to reduce the pm2.5 by lbw_change
+# new_pm2_5 <- function(pm_reading) {
+#   new_reading <- pm_reading + lbw_change
+#   return(new_reading)
+# }
+
+#test out the function
+#new_pm2_5(5)
+
+#reduced_pm_data <- relevant_data %>% 
+#  apply(low_birth_weigth, MARGIN = "lbw_change", FUN = new_pm2_5)
+
+#new_lbw_avg <- 
+
+# apply this change to each value of lbw and take the new average
+```
+```{r}
+# simple approach: subtract from average PM2.5 which is 10.1527
+reduced_avg_pm <- avg_pm2_5 - 2
+
+# eqn: low_birth_weight = 3.8009877 + (0.1179305)number_PM_unit_increase
+avg_lbw_with_avg_pm <- 3.8009877 + 0.1179305*avg_pm2_5
+avg_lbw_with_avg_pm
+# this value is 4.998301, which is very close to the raw average lbw when not considering the average pm, which is 5.003372
+
+# This value is positive. The slope coeff from the output of the lm_robust() function described the relationship of an INCREASE in 1 unit of PM2.5 means an INCREASE in lbw, and the policy suggested in question e would REDUCE PM2.5 by 2 units, so flip the sign of the slope and double the value
+lbw_change <- -(2*0.1179305)
+lbw_change
+
+# factor in the 2 unit DECREASE of pm2.5
+new_lbw_with_decreased_pm <- 3.8009877 + lbw_change
+new_lbw_with_decreased_pm
+
+# derive the 95% CI
 
 ```
 
+**The new average low birth rate is `r new_lbw_with_decreased_pm`. The confidence interval is between 0.1014596 and 0.1344015. This means that if the population of interest was sampled many times, 95% of the time this confidence interval would contain the difference in low birth weight for each 1 unit decrease in PM2.5.**
+
+```{r}
+# maybe the question is just asking us to subtract lbw_change from the intercept...but would that yield the avg?
+#intercept <- 3.8009877
+#new_lbw_avg = intercept + lbw_change
+#new_lbw_avg
+
+#The average PM2.5 reading is `r avg_pm2_5` micrograms per cubic meter. Subtracting 2 micrograms per cubic meters from this yeilds... 
+```
 
 (f) Add the variable Poverty as an explanatory variable to the regression in (d). Interpret the estimated coefficient on Poverty. What happens to the estimated coefficient on PM25, compared to the regression in (d). Explain.
+
+```{r}
+pov_pm_model <- lm_robust(formula = low_birth_weight ~ pm2_5 + poverty, data = relevant_data)
+pov_pm_model
+
+new_pm_est <- 0.05910773
+old_pm_est <- 0.1179305
+diff_pm_est <- new_pm_est - old_pm_est
+diff_pm_est
+# the old_pm_est is larger, the new pm est showed a decrease of -0.05882277
+```
+
+- **The estimated coefficient for poverty is 0.02743528. This means that for every 1 unit increase in poverty, which is a 1 percent increase in the population in the census tract that lives below twice the federal poverty line, the estimated low birth weight increases by 0.02743528 units, which is the percentage of the census tract births with weight less than 2500g, when PM2.5 is held constant.**
+
+- **The estimated coefficient for PM2.5 is now `r new_pm_est`, which is 0.05882277 lower than the original PM2.5 coefficient estimate of `r old_pm_est`. The PM2.5 now has 0.05882277 much less of an impact on low birth weight with the newly added regressor poverty. These regressors are now distributing the responsiblity for the trend in low birth rate.**
+
 (g) From the regression in (f), test the null hypothesis that the effect of PM2.5 is equal to the effect of Poverty
 
-
+**
 
 
 
