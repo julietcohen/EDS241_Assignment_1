@@ -1,0 +1,110 @@
+---
+title: "question_e"
+author: "Juliet"
+date: "1/18/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+(e) **Suppose a new air quality policy is expected to reduce PM2.5 concentration by 2 micrograms per cubic meters. Predict the new average value of LowBirthWeight and derive its 95% confidence interval. Interpret the 95% confidence interval.
+
+```{r}
+pm_model
+```
+
+```{r}
+pm_model$coefficients[2]
+lbw_change <- -2*(pm_model$coefficients[2])
+lbw_change
+
+lbw_avg = mean(relevant_data$low_birth_weight)
+lbw_avg
+
+new_lbw_avg <- lbw_avg + pm_change
+new_lbw_avg
+
+new_lbw_avg < lbw_avg
+
+# CI equation from lecture 3 slide 13
+
+
+
+```
+
+
+```{r}
+# simple approach: subtract from average PM2.5 which is 10.1527
+# reduced_avg_pm <- avg_pm2_5 - 2
+# 
+# # eqn: low_birth_weight = 3.8009877 + (0.1179305)x
+avg_lbw_with_avg_pm <- pm_model$coefficients[1] + pm_model$coefficients[2]*avg_pm2_5
+ avg_lbw_with_avg_pm
+# # this value is 4.998301, which is very close to the raw average lbw when not considering the average pm, which is 5.003372
+# 
+# avg_lbw_with_decreased_pm <- pm_model$coefficients[1] + pm_model$coefficients[2]*reduced_avg_pm
+# avg_lbw_with_decreased_pm
+# # 4.76244
+# 
+# # derive the 95% CI
+# # num of rows = 8035, so use df = 8035-1
+# error <- qt(0.025, df = (length(relevant_data$low_birth_weight)-1), lower.tail = FALSE)*sd(relevant_data$low_birth_weight)/sqrt(length(relevant_data$low_birth_weight))
+# error
+# 
+# # subtract the error from the mean for lower CI, and add it for the upper CI
+# upper_ci <- avg_lbw_with_decreased_pm + error
+# upper_ci
+# lower_ci <- avg_lbw_with_decreased_pm - error
+# lower_ci
+
+# answer. which is probs wrong:
+# **The new average low birth rate is** `r avg_lbw_with_decreased_pm`. **The confidence interval is** [`r lower_ci`,`r upper_ci`]. **This means that if the population of interest was randomly sampled many times, 95% of the time this confidence interval would contain the true value of low birth weight.**
+```
+
+```{r DELETE}
+# example of CI's using 2 means, from hw 4:
+# nc_count = states_regions %>% 
+#   filter(state_region == "North Central") %>%
+#   count()
+# 
+# nc_sd = states_regions %>% 
+#   filter(state_region == "North Central") %>%
+#   summarize(sd(frost, na.rm = TRUE))
+# 
+# SE_nc_s = as.numeric(sqrt(nc_sd^2/nc_count + s_sd^2/s_count))
+# SE_nc_s
+# 
+# zscore_nc_s = (pt_est_nc_s - 0)/SE_nc_s
+# zscore_nc_s
+# 
+# p_val_nc_s = 2 * pt(zscore_nc_s, df = 26, lower.tail = FALSE)
+# p_val_nc_s
+# 
+# crit_val_nc_s = qt(0.025, df = 26, lower.tail=FALSE)
+# ci_lower_nc_s = round(pt_est_nc_s - crit_val_nc_s*SE_nc_s, 2)
+# ci_upper_nc_s = round(pt_est_nc_s + crit_val_nc_s*SE_nc_s, 2)
+# 
+# # for this assignment:
+# count <- 8035 # number of rows
+# sd <- sd(relevant_data$low_birth_weight, na.rm = TRUE)
+# sd
+# 
+# SE <- as.numeric(sqrt())
+# 
+# #qnorm(p, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+# crit_val = qnorm(p = 0.025, lower.tail = TRUE)
+# crit_val
+```
+
+```{r DELETE}
+# This value is positive. The slope coeff from the output of the lm_robust() function described the relationship of an INCREASE in 1 unit of PM2.5 means an INCREASE in lbw, and the policy suggested in question e would REDUCE PM2.5 by 2 units, so flip the sign of the slope and double the value
+#lbw_change_w_policy <- -(2*pm_model$coefficients[2])
+#lbw_change_w_policy
+# -0.2358611 
+
+# factor in the 2 unit DECREASE of pm2.5
+#new_lbw_with_decreased_pm <- 3.8009877 + lbw_change
+#new_lbw_with_decreased_pm
+```
