@@ -2,7 +2,9 @@
 title: "assignment_1"
 author: "Juliet Cohen"
 date: "1/13/2022"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -39,10 +41,8 @@ library(car)
 # import data as a csv so the class is normal but there is fewer data points
 data <- read.csv(here("CES4_copy.csv")) %>% 
   clean_names()
-```
 
-```{r}
-colnames(data)
+#colnames(data)
 ```
 
 (a) What is the average concentration of PM2.5 across all census tracts in California?
