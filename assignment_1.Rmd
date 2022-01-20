@@ -1,10 +1,11 @@
 ---
-title: "Assignment 1 - EDS 241: Environmental Policy Evaluation"
+title: 'Assignment 1 - EDS 241: Environmental Policy Evaluation'
 author: "Juliet Cohen"
 date: "1/19/2022"
 output:
   pdf_document: default
   html_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -17,12 +18,14 @@ For the assignment, you will need the following variables: CensusTract, TotalPop
 
 ```{r}
 library(here)
-library(readxl)
 library(janitor)
 library(tidyverse)
+library(dplyr)
 library(estimatr)
 library(car)
 library(modelsummary)
+library(broom)
+library(knitr)
 ```
 
 ```{r}
@@ -40,7 +43,7 @@ relevant_data <- data %>%
 # there are 75 NA values in the poverty col, and 227 NA values in LBW
 ```
 
-(a) What is the average concentration of PM2.5 across all census tracts in California?
+### (a) What is the average concentration of PM2.5 across all census tracts in California?
 
 ```{r}
 # remove na rows
@@ -48,12 +51,11 @@ relevant_data <- na.omit(relevant_data)
 
 # calculate avg pm
 avg_pm2_5 <- mean(relevant_data$pm2_5)
-#avg_pm2_5
 ```
 
 **The average ambient PM2.5 concentration across all census tracts in California is `r avg_pm2_5` micrograms per cubic meter**
 
-(b) What county has the highest level of poverty in California?
+### (b) What county has the highest level of poverty in California?
 
 ```{r}
 # get the mean poverty value for each county
@@ -70,7 +72,7 @@ mean_pov_county
 ```
 **In California, Tulare county has the highest poverty with a mean of `r mean_pov_county$mean_pov` percent of the county population in the census tract living below twice the federal poverty line.**
 
-(c) Make a histogram depicting the distribution of percent low birth weight and PM2.5.
+### (c) Make a histogram depicting the distribution of percent low birth weight and PM2.5.
 
 ```{r}
 hist_birth_weight <- ggplot(data = relevant_data, aes(x = low_birth_weight)) +
@@ -104,16 +106,20 @@ hist_pm2_5 <- ggplot(data = relevant_data, aes(x = pm2_5)) +
 hist_pm2_5
 ```
 
-(d) Estimate a OLS regression of LowBirthWeight on PM25. Report the estimated slope coefficient and its heteroskedasticity-robust standard error. Interpret the estimated slope coefficient. Is the effect of PM25 on LowBirthWeight statistically significant at the 5%?
+### (d) Estimate a OLS regression of LowBirthWeight on PM25. Report the estimated slope coefficient and its heteroskedasticity-robust standard error. Interpret the estimated slope coefficient. Is the effect of PM25 on LowBirthWeight statistically significant at the 5%?
 
 ```{r}
 pm_model <- lm_robust(formula = low_birth_weight ~ pm2_5, data = relevant_data)
 pm_model
-
-modelsummary(pm_model, title = "OLS Regression of PM2.5 and Low Birth Weight")
+#modelsummary(pm_model, title = "OLS Regression of PM2.5 and Low Birth Weight")
+pm_model_table <- tidy(pm_model)
+pm_model_table %>%
+  select(term, estimate, std.error, p.value, conf.low, conf.high) %>% 
+  kable()
 ```
 
-```{r}
+
+```{r, include = FALSE, eval = FALSE}
 # call coefficients, std. errors, and p-values as objects
 pm_model$coefficients[1]
 pm_model$coefficients[2]
@@ -130,7 +136,7 @@ low_birth_weight = `r pm_model$coefficients[1]` + (`r pm_model$coefficients[2]`)
 - **The slope coefficient represents the amount of change in birth weights for each 1 unit increase in PM2.5 concentration, which is in units of micrograms per cubic meter. Since the slope coefficient is positive, the percentage of low birth rates will increase by** `r pm_model$coefficients[2]` **for every 1 microgram per cubic meter increase in PM2.5 in the ambient air.**\
 - **The effect of PM2_5 on Low Birth Rate is indeed statistically significant, with the PM2.5 p-value being** `r pm_model$p.value[2]`, **which is much smaller than the standard threshold for significance of 0.05.**
 
-```{r}
+```{r, include=FALSE, eval=FALSE}
 ggplot(data = relevant_data, aes(x = pm2_5, y = low_birth_weight)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
@@ -138,31 +144,32 @@ ggplot(data = relevant_data, aes(x = pm2_5, y = low_birth_weight)) +
   ylab("Low Birth Weight")
 ```
 
-(f) Add the variable Poverty as an explanatory variable to the regression in (d). Interpret the estimated coefficient on Poverty. What happens to the estimated coefficient on PM25, compared to the regression in (d). Explain.
+### (f) Add the variable Poverty as an explanatory variable to the regression in (d). Interpret the estimated coefficient on Poverty. What happens to the estimated coefficient on PM25, compared to the regression in (d). Explain.
 
 ```{r}
 pov_pm_model <- lm_robust(formula = low_birth_weight ~ pm2_5 + poverty, data = relevant_data)
 pov_pm_model
-
-modelsummary(pm_model, title = "OLS Regression of PM2.5, Poverty, and Low Birth Weight")
+#modelsummary(pm_model, title = "OLS Regression of PM2.5, Poverty, and Low Birth Weight")
+pov_pm_model_table <- tidy(pov_pm_model)
+pov_pm_model_table %>%
+  select(term, estimate, std.error, p.value, conf.low, conf.high) %>% 
+  kable()
 ```
 
 ```{r}
 # old pm slope coefficient - new pm slope coefficient
 diff_pm_coeff <- pm_model$coefficients[2] - pov_pm_model$coefficients[2]
-diff_pm_coeff
-# difference is 0.05905419 
 ```
 
 - **The estimated coefficient for poverty is** `r pov_pm_model$coefficients[3]`. **This means that for every 1 unit increase in poverty, which is a 1 percent increase in the population in the census tract that lives below twice the federal poverty line, the estimated low birth weight increases by** `r pov_pm_model$coefficients[3]` **units, which is the percentage of the census tract births with weight less than 2500g, when PM2.5 is held constant.**
 
 - **The estimated coefficient for PM2.5 is now** `r pov_pm_model$coefficients[2]`, **which is** `r diff_pm_coeff` **lower than the original PM2.5 coefficient estimate of** `r pm_model$coefficients[2]`. **The PM2.5 now has** `r diff_pm_coeff` **much less of an impact on low birth weight with the newly added regressor poverty. These regressors are now distributing the responsiblity for the trend in low birth rate.**
 
-(g) From the regression in (f), test the null hypothesis that the effect of PM2.5 is equal to the effect of Poverty
+### (g) From the regression in (f), test the null hypothesis that the effect of PM2.5 is equal to the effect of Poverty
 
 ```{r}
 model_hypoth_test <- linearHypothesis(pov_pm_model, c("pm2_5 - poverty = 0"), white.adjust = "hc2")
-
+model_hypoth_test
 p_value <- model_hypoth_test$`Pr(>Chisq)`[2]
 p_value
 ```
