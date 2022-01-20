@@ -1,7 +1,7 @@
 ---
-title: "assignment_1"
+title: "Assignment 1 - EDS 241: Environmental Policy Evaluation"
 author: "Juliet Cohen"
-date: "1/13/2022"
+date: "1/19/2022"
 output:
   pdf_document: default
   html_document: default
@@ -22,45 +22,33 @@ library(janitor)
 library(tidyverse)
 library(estimatr)
 library(car)
+library(modelsummary)
 ```
 
 ```{r}
-#data_xlsx <- read_excel(here("CES4.xlsx"))
-
-#class(data_xlsx$"Low Birth Weight")
-
-#data_xlsx <- data_xlsx %>% 
-#  unlist("Low Birth Weight") %>% 
-#  as.numeric("Low Birth Weight")
-
-#relevant_data_xlsx <- data_xlsx %>% 
-#  select(census_tract, pm2_5, total_population, california_county, low_birth_weight, poverty)
-
-#map(relevant_data_xlsx, ~sum(is.na(.)))
-
 # import data as a csv so the class is normal but there is fewer data points
 data <- read.csv(here("CES4_copy.csv")) %>% 
   clean_names()
-
 #colnames(data)
-```
 
-(a) What is the average concentration of PM2.5 across all census tracts in California?
-
-```{r}
 # subset data for only relevant columns for this assignment
 relevant_data <- data %>% 
   select(census_tract, pm2_5, total_population, california_county, low_birth_weight, poverty)
 
 # check if there are any NA values
-map(relevant_data, ~sum(is.na(.)))
+#map(relevant_data, ~sum(is.na(.)))
 # there are 75 NA values in the poverty col, and 227 NA values in LBW
+```
 
+(a) What is the average concentration of PM2.5 across all census tracts in California?
+
+```{r}
 # remove na rows
 relevant_data <- na.omit(relevant_data)
 
+# calculate avg pm
 avg_pm2_5 <- mean(relevant_data$pm2_5)
-avg_pm2_5
+#avg_pm2_5
 ```
 
 **The average ambient PM2.5 concentration across all census tracts in California is `r avg_pm2_5` micrograms per cubic meter**
@@ -76,10 +64,6 @@ mean_pov_county_df <- relevant_data %>%
 # remove rows with NA
 mean_pov_county_no_na <-  na.omit(mean_pov_county_df)
 
-# find county with max avg poverty
-#max_pov_county <- max(mean_pov_county_no_na$mean_pov)
-#max_pov_county
-
 # reduce dataframe to just row with max value
 mean_pov_county <- mean_pov_county_no_na[which.max(mean_pov_county_no_na$mean_pov),]
 mean_pov_county
@@ -87,15 +71,6 @@ mean_pov_county
 **In California, Tulare county has the highest poverty with a mean of `r mean_pov_county$mean_pov` percent of the county population in the census tract living below twice the federal poverty line.**
 
 (c) Make a histogram depicting the distribution of percent low birth weight and PM2.5.
-
-```{r}
-#class(relevant_data$low_birth_weight)
-#as.numeric(unlist(relevant_data$low_birth_weight))
-# lbw_num_vec <- relevant_data %>% 
-#   unlist("low_birth_weight") %>% 
-#   as.numeric("low_birth_weight")
-# lbw_num_vec
-```
 
 ```{r}
 hist_birth_weight <- ggplot(data = relevant_data, aes(x = low_birth_weight)) +
@@ -134,6 +109,8 @@ hist_pm2_5
 ```{r}
 pm_model <- lm_robust(formula = low_birth_weight ~ pm2_5, data = relevant_data)
 pm_model
+
+modelsummary(pm_model, title = "OLS Regression of PM2.5 and Low Birth Weight")
 ```
 
 ```{r}
@@ -144,7 +121,8 @@ pm_model$std.error[2]
 pm_model$p.value[2]
 ```
 
-**The linear equation for the relationship between PM2.5 concentration and low birth weight is:\**
+
+**The linear equation for the relationship between PM2.5 concentration and low birth weight is:**\
 low_birth_weight = `r pm_model$coefficients[1]` + (`r pm_model$coefficients[2]`)number_PM_unit_increase + u
 
 - **The estimated slope coefficient for the OLS regression of PM2.5 on Low Birth Weight is** `r pm_model$coefficients[2]`
@@ -166,15 +144,14 @@ ggplot(data = relevant_data, aes(x = pm2_5, y = low_birth_weight)) +
 pov_pm_model <- lm_robust(formula = low_birth_weight ~ pm2_5 + poverty, data = relevant_data)
 pov_pm_model
 
-pov_pm_model$coefficients[2]
+modelsummary(pm_model, title = "OLS Regression of PM2.5, Poverty, and Low Birth Weight")
+```
 
+```{r}
 # old pm slope coefficient - new pm slope coefficient
 diff_pm_coeff <- pm_model$coefficients[2] - pov_pm_model$coefficients[2]
 diff_pm_coeff
 # difference is 0.05905419 
-```
-```{r}
-pov_pm_model$coefficients[2]
 ```
 
 - **The estimated coefficient for poverty is** `r pov_pm_model$coefficients[3]`. **This means that for every 1 unit increase in poverty, which is a 1 percent increase in the population in the census tract that lives below twice the federal poverty line, the estimated low birth weight increases by** `r pov_pm_model$coefficients[3]` **units, which is the percentage of the census tract births with weight less than 2500g, when PM2.5 is held constant.**
@@ -184,15 +161,13 @@ pov_pm_model$coefficients[2]
 (g) From the regression in (f), test the null hypothesis that the effect of PM2.5 is equal to the effect of Poverty
 
 ```{r}
-model_hypoth_test <- linearHypothesis(pov_pm_model, 
-                                      c("pm2_5 - poverty = 0"), 
-                                      white.adjust = "hc2")
+model_hypoth_test <- linearHypothesis(pov_pm_model, c("pm2_5 - poverty = 0"), white.adjust = "hc2")
 
 p_value <- model_hypoth_test$`Pr(>Chisq)`[2]
 p_value
 ```
 
-**Null Hypothesis: The effect of PM2.5 on Low Birth Weight = The effect of Poverty on Low Birth Weight**
+**Null Hypothesis: The effect of PM2.5 on Low Birth Weight = The effect of Poverty on Low Birth Weight**\
 **Althernative Hypothesis: The effect of PM2.5 on Low Birth Weight =/= The effect of Poverty on Low Birth Weight**
 
 **The p-value for this hypothesis test is `r p_value`, which is smaller than the standard threshold for significance of 0.05. We can indeed reject the null hypothesis that the effect of PM2.5 on Low Birth Weight is equal to the effect of Poverty on Low Birth Weight.**
